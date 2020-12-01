@@ -17,26 +17,12 @@ Pacman.User = function (game, map) {
   var position = null,
     direction = null,
     due = null,
-    lives = null,
-    score = 5,
     keyMap = {};
 
   keyMap[KEY.ARROW_LEFT] = LEFT;
   keyMap[KEY.ARROW_UP] = UP;
   keyMap[KEY.ARROW_RIGHT] = RIGHT;
   keyMap[KEY.ARROW_DOWN] = DOWN;
-
-  function addScore(nScore) {
-    score += nScore;
-    if (score >= 10000 && score - nScore < 10000) {
-      lives += 1;
-    }
-  }
-
-  function initUser() {
-    score = 0;
-    lives = 3;
-  }
 
   function resetPosition() {
     position = { x: 90, y: 120 };
@@ -45,7 +31,6 @@ Pacman.User = function (game, map) {
   }
 
   function reset() {
-    initUser();
     resetPosition();
   }
 
@@ -205,12 +190,8 @@ Pacman.User = function (game, map) {
     ctx.fill();
   }
 
-  initUser();
-
   return {
     draw: draw,
-    score: score,
-    addScore: addScore,
     keyDown: keyDown,
     move: move,
     reset: reset,
@@ -344,23 +325,9 @@ Pacman.Map = function (size) {
 
     ctx.beginPath();
 
-    if (
-      layout === Pacman.EMPTY ||
-      layout === Pacman.BLOCK ||
-      layout === Pacman.BISCUIT
-    ) {
+    if (layout === Pacman.EMPTY || layout === Pacman.BLOCK) {
       ctx.fillStyle = "#000";
       ctx.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
-
-      if (layout === Pacman.BISCUIT) {
-        ctx.fillStyle = "#FFF";
-        ctx.fillRect(
-          x * blockSize + blockSize / 2.5,
-          y * blockSize + blockSize / 2.5,
-          blockSize / 6,
-          blockSize / 6
-        );
-      }
     }
     ctx.closePath();
   }
@@ -397,37 +364,19 @@ var PACMAN = (function () {
     user = null,
     stored = null;
 
-  function dialog(text) {
-    ctx.fillStyle = "#FFFF00";
-    ctx.font = "18px Calibri";
-    var width = ctx.measureText(text).width,
-      x = (map.width * map.blockSize - width) / 2;
-    ctx.fillText(text, x, map.height * 10 + 8);
-  }
-
-  function startLevel() {
+  function startNewGame() {
+    level = 1;
+    user.reset();
+    map.reset();
+    map.draw(ctx);
     user.resetPosition();
     timerStart = tick;
     setState(COUNTDOWN);
   }
 
-  function startNewGame() {
-    setState(WAITING);
-    level = 1;
-    user.reset();
-    map.reset();
-    map.draw(ctx);
-    startLevel();
-  }
-
   function keyDown(e) {
     if (e.keyCode === KEY.N) {
       startNewGame();
-    } else if (e.keyCode === KEY.P) {
-      stored = state;
-      setState(PAUSE);
-      map.draw(ctx);
-      dialog("Paused");
     } else if (state !== PAUSE) {
       return user.keyDown(e);
     }
@@ -470,7 +419,6 @@ var PACMAN = (function () {
     } else if (state === WAITING && stateChanged) {
       stateChanged = false;
       map.draw(ctx);
-      dialog("Press N to start a New game");
     } else if (state === COUNTDOWN) {
       diff = 1 + Math.floor((timerStart - tick) / Pacman.FPS);
       if (diff === 0) {
@@ -512,13 +460,10 @@ var PACMAN = (function () {
     );
 
     map.draw(ctx);
-    dialog("Loading ...");
     loaded();
   }
 
   function loaded() {
-    dialog("Press N to Start");
-
     document.addEventListener("keydown", keyDown, true);
     document.addEventListener("keypress", keyPress, true);
 
